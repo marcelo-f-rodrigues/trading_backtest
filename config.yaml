@@ -1,0 +1,81 @@
+# ============================================================
+# Configuração Central do Framework
+# ============================================================
+
+# --- Ativos disponíveis ---
+assets:
+  - BTCUSD
+  - BOVA11
+  - IVVB11
+  - USDBRL
+  - XAUUSD
+  - WTIUSD
+  - DOLFUT
+  - COPPERFUT
+  - SOYFUT
+
+# --- Formato esperado dos CSVs ---
+data:
+  date_column: "Date"        # Nome da coluna de data
+  date_format: "%Y-%m-%d"    # Formato da data
+  ohlcv_columns:             # Mapeamento: nome_padrão -> nome_no_csv
+    open: "Open"
+    high: "High"
+    low: "Low"
+    close: "Close"
+    volume: "Volume"
+  directory: "data/raw"
+
+# --- Engine de Backtest ---
+backtest:
+  initial_capital: 100000.0  # Capital inicial em USD/BRL
+  commission: 0.001           # Comissão por operação (0.1%)
+  slippage: 0.001             # Slippage estimado (0.1%)
+
+  # Entradas/saídas graduais
+  gradual_entry:
+    enabled: true
+    n_tranches: 3             # Número de parcelas para montar/desmontar posição
+    tranche_interval_days: 3  # Dias entre cada parcela
+
+# --- Janelas temporais para robustez ---
+temporal_windows:
+  - name: "2010-2015"
+    start: "2010-01-01"
+    end:   "2015-12-31"
+  - name: "2015-2020"
+    start: "2015-01-01"
+    end:   "2020-12-31"
+  - name: "2020-2026"
+    start: "2020-01-01"
+    end:   "2026-12-31"
+  - name: "full"
+    start: null
+    end:   null
+
+# --- Thresholds para classificação ---
+thresholds:
+  sharpe_positive: 0.0
+  calmar_good: 0.5
+  ruin_risk_low: 0.05         # < 5% → baixo risco de ruína
+  ruin_risk_high: 0.20        # > 20% → alto risco de ruína
+  flow_frequent: 24           # > 24 trades/ano → fluxo recorrente
+  flow_sporadic: 6            # < 6 trades/ano → fluxo esporádico
+
+# --- Métricas para rankings por perfil ---
+profiles:
+  growth:
+    metrics: [cagr, total_return, capital_efficiency]
+    weights: [0.5, 0.3, 0.2]
+  preservation:
+    metrics: [max_drawdown, ruin_risk, recovery_time]
+    weights: [0.4, 0.4, 0.2]
+  flow:
+    metrics: [pct_months_positive, trades_per_year, monthly_return_std]
+    weights: [0.4, 0.3, 0.3]
+  simplicity:
+    metrics: [complexity_score, decisions_per_year, n_parameters]
+    weights: [0.5, 0.3, 0.2]
+  robustness:
+    metrics: [cross_asset_score, temporal_score, parametric_score]
+    weights: [0.4, 0.3, 0.3]

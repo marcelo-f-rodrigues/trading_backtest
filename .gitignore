@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Ambiente virtual
+venv/
+env/
+.env
+.venv
+
+# Dados sensíveis (não versionar os CSVs brutos)
+data/raw/*.csv
+data/processed/*.csv
+
+# Resultados gerados
+results/reports/*.csv
+results/charts/
+results/rankings/*.csv
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
