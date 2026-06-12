@@ -114,6 +114,11 @@ class FullMetrics:
     ruin_risk: float = np.nan
     ruin_classification: str = ""
 
+    # --- Scores de Objetivo ---
+    growth_score: float = np.nan
+    income_score: float = np.nan
+    safety_score: float = np.nan
+
 
 # ---------------------------------------------------------------------------
 # Calculadora Principal
@@ -153,6 +158,7 @@ class MetricsCalculator:
         self._psychological(m)
         self._operational(m)
         self._ruin_risk(m)
+        self._objective_scores(m)
 
         return m
 
@@ -180,7 +186,7 @@ class MetricsCalculator:
 
         # Volatilidade
         m.volatility_annual = float(ret.std() * np.sqrt(TRADING_DAYS))
-        m.annualized_volatility = float(ret.std() * np.sqrt(TRADING_DAYS))
+        # m.annualized_volatility = float(ret.std() * np.sqrt(TRADING_DAYS))
 
         # Sharpe (risk-free = 0 para simplificar)
         m.sharpe_ratio = (
@@ -479,6 +485,42 @@ class MetricsCalculator:
             m.ruin_classification = "médio"
         else:
             m.ruin_classification = "alto"
+
+    # -----------------------------------------------------------------------
+    # Scores por objetivo
+    # -----------------------------------------------------------------------
+
+    def _objective_scores(self, m: FullMetrics):
+
+        # Crescimento de capital
+        growth = [
+            m.cagr,
+            m.sharpe_ratio,
+            -abs(m.max_drawdown)
+        ]
+
+        m.growth_score = np.nanmean(growth)
+
+
+        # Renda constante
+        income = [
+            m.monthly_return_mean,
+            m.pct_months_positive,
+            m.trades_per_year / 100
+        ]
+
+        m.income_score = np.nanmean(income)
+
+
+
+        # Preservação de capital
+        safety = [
+            m.sharpe_ratio,
+            -abs(m.max_drawdown),
+            -m.volatility_annual
+        ]
+
+        m.safety_score = np.nanmean(safety)
 
     # -----------------------------------------------------------------------
     # Utilitário: resumo como dict
