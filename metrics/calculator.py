@@ -37,6 +37,7 @@ class FullMetrics:
 
     # --- 1. Performance Clássica ---
     total_return: float = np.nan
+    final_equity: float = np.nan
     cagr: float = np.nan
     annual_return_mean: float = np.nan
     annual_return_median: float = np.nan
@@ -69,6 +70,7 @@ class FullMetrics:
 
     # --- 4. Eficiência do Capital ---
     avg_exposure: float = np.nan
+    max_exposure: float = np.nan
     pct_time_invested: float = np.nan
     pct_time_cash: float = np.nan
     avg_trade_duration: float = np.nan
@@ -76,6 +78,9 @@ class FullMetrics:
     return_per_day_invested: float = np.nan
 
     # --- 5. Métricas de Fluxo ---
+    n_signals: int = 0
+    n_entries: int = 0
+    n_completed_trades: int = 0
     trades_per_year: float = np.nan
     avg_interval_between_trades: float = np.nan
     max_interval_between_trades: float = np.nan
@@ -165,6 +170,7 @@ class MetricsCalculator:
         n_years = len(eq) / TRADING_DAYS
 
         m.total_return = float(eq.iloc[-1] / eq.iloc[0] - 1)
+        m.final_equity = float(eq.iloc[-1] * 10000.0)
         m.cagr = float((eq.iloc[-1] / eq.iloc[0]) ** (1 / n_years) - 1) if n_years > 0 else np.nan
 
         # Retornos anuais
@@ -174,6 +180,7 @@ class MetricsCalculator:
 
         # Volatilidade
         m.volatility_annual = float(ret.std() * np.sqrt(TRADING_DAYS))
+        m.annualized_volatility = float(ret.std() * np.sqrt(TRADING_DAYS))
 
         # Sharpe (risk-free = 0 para simplificar)
         m.sharpe_ratio = (
@@ -220,6 +227,11 @@ class MetricsCalculator:
     def _trade_distribution(self, m: FullMetrics):
         trades = self.trades
         m.n_trades = len(trades)
+        m.n_completed_trades = len(trades)
+        if self.result.signals is not None and len(self.result.signals):
+            m.n_signals = int((self.result.signals.fillna(0) != 0).sum())
+            prev = self.result.signals.shift(fill_value=0)
+            m.n_entries = int(((self.result.signals != 0) & (prev == 0)).sum())
 
         if not trades:
             return
@@ -278,6 +290,7 @@ class MetricsCalculator:
     def _capital_efficiency(self, m: FullMetrics):
         pos = self.positions.dropna()
         m.avg_exposure      = float(pos.mean())
+        m.max_exposure      = float(pos.max()) if len(pos) else 0.0
         m.pct_time_invested = float((pos > 0).mean())
         m.pct_time_cash     = float((pos == 0).mean())
 
@@ -302,7 +315,7 @@ class MetricsCalculator:
         n_years = len(eq) / TRADING_DAYS
 
         if n_years > 0:
-            m.trades_per_year = len(self.trades) / n_years
+            m.trades_per_year = (len(self.trades) if len(self.trades) > 0 else m.n_entries) / n_years
 
         # Intervalos entre trades
         if len(self.trades) > 1:
@@ -397,7 +410,7 @@ class MetricsCalculator:
 
     def _operational(self, m: FullMetrics):
         n_years = len(self.equity) / TRADING_DAYS
-        m.decisions_per_year = len(self.trades) * 2 / n_years if n_years > 0 else 0
+        m.decisions_per_year = (m.n_entries + m.n_completed_trades) / n_years if n_years > 0 else 0
 
         # Complexity Score: normaliza número de parâmetros + frequência de decisões
         param_score = min(m.n_parameters / 5, 1.0)
@@ -455,6 +468,14 @@ class MetricsCalculator:
         if m.ruin_risk < cfg_thresh["low"]:
             m.ruin_classification = "baixo"
         elif m.ruin_risk < cfg_thresh["high"]:
+            m.ruin_classification = "médio"
+        else:
+            m.ruin_classification = "alto"
+
+        # Texto explicativo útil para o dashboard
+        if m.ruin_risk < 0.05:
+            m.ruin_classification = "baixo"
+        elif m.ruin_risk < 0.20:
             m.ruin_classification = "médio"
         else:
             m.ruin_classification = "alto"

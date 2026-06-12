@@ -37,7 +37,7 @@ data:
 
 # --- Engine de Backtest ---
 backtest:
-  initial_capital: 100000.0  # Capital inicial em USD/BRL
+  initial_capital: 10000.0  # Capital inicial em USD/BRL
   commission: 0.001           # Comissão por operação (0.1%)
   slippage: 0.001             # Slippage estimado (0.1%)
 

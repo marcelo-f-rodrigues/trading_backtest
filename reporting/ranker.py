@@ -55,14 +55,17 @@ def build_comparison_table(metrics_list: list[FullMetrics]) -> pd.DataFrame:
         rows.append({
             "strategy":               m.strategy_name,
             "asset":                  m.asset,
+            "period":                 getattr(m, "period", "full"),
             # Performance
             "cagr":                   m.cagr,
+            "final_equity":           m.final_equity,
             "total_return":           m.total_return,
             "sharpe_ratio":           m.sharpe_ratio,
             "sortino_ratio":          m.sortino_ratio,
             "calmar_ratio":           m.calmar_ratio,
             "profit_factor":          m.profit_factor,
             "volatility_annual":      m.volatility_annual,
+            "annualized_volatility":  m.annualized_volatility,
             # Drawdown
             "max_drawdown":           m.max_drawdown,
             "avg_drawdown":           m.avg_drawdown,
@@ -70,6 +73,9 @@ def build_comparison_table(metrics_list: list[FullMetrics]) -> pd.DataFrame:
             "longest_flat_days":      m.longest_flat_period_days,
             # Trades
             "n_trades":               m.n_trades,
+            "n_signals":              m.n_signals,
+            "n_entries":              m.n_entries,
+            "n_completed_trades":     m.n_completed_trades,
             "win_rate":               m.win_rate,
             "expectancy":             m.expectancy,
             "payoff_ratio":           m.payoff_ratio,
@@ -81,6 +87,8 @@ def build_comparison_table(metrics_list: list[FullMetrics]) -> pd.DataFrame:
             "flow":                   m.flow_classification,
             # Eficiência
             "pct_time_invested":      m.pct_time_invested,
+            "avg_exposure":           m.avg_exposure,
+            "max_exposure":           m.max_exposure,
             "avg_trade_duration":     m.avg_trade_duration,
             # Raros
             "pct_profit_top5":        m.pct_profit_top5,

@@ -88,7 +88,7 @@ class BacktestEngine:
         df: pd.DataFrame,
         strategy: BaseStrategy,
         asset: str = "UNKNOWN",
-        initial_capital: float = 100_000.0,
+        initial_capital: float = 10_000.0,
         commission: float = 0.001,
         slippage: float = 0.001,
         gradual_entry: bool = True,

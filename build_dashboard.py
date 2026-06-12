@@ -20,6 +20,8 @@ import json
 import pandas as pd
 import numpy as np
 
+from strategies.documentation import get_strategy_documentation
+
 REPORTS_DIR  = "results/reports"
 RANKINGS_DIR = "results/rankings"
 OUTPUT_PATH  = "results/dashboard.html"
@@ -59,16 +61,21 @@ def main():
         return
 
     # --- Listas auxiliares ---
-    strategies = sorted(all_metrics["strategy"].unique().tolist())
-    assets      = sorted(all_metrics["asset"].unique().tolist())
+    strategies = sorted(all_metrics["strategy"].dropna().astype(str).unique().tolist())
+    assets      = sorted(all_metrics["asset"].dropna().astype(str).unique().tolist())
+    periods     = sorted(all_metrics["period"].fillna("full").astype(str).unique().tolist())
 
     # --- Dados para o JS ---
+    docs = {name: get_strategy_documentation(name) for name in strategies}
+
     data_json = {
         "all_metrics": _clean_for_json(all_metrics),
         "summary":     _clean_for_json(summary) if not summary.empty else [],
         "rankings":    {p: _clean_for_json(df) for p, df in rankings.items() if not df.empty},
         "strategies":  strategies,
         "assets":      assets,
+        "periods":     periods,
+        "strategy_docs": docs,
     }
 
     html = _build_html(data_json)
@@ -231,6 +238,10 @@ def _build_html(data: dict) -> str:
       <select id="filter-strategy"><option value="">Todas</option></select>
     </div>
     <div class="control-group">
+      <label>Período</label>
+      <select id="filter-period"><option value="">Todos</option></select>
+    </div>
+    <div class="control-group">
       <label>Ordenar por</label>
       <select id="sort-col">
         <option value="cagr">CAGR</option>
@@ -278,6 +289,8 @@ def _build_html(data: dict) -> str:
   </div>
 
   <div class="grid" id="detail-cards"></div>
+
+  <div class="chart-card" id="strategy-doc-card"></div>
 
   <div class="chart-card">
     <h3>CAGR por Ativo</h3>
@@ -370,6 +383,7 @@ function populateSelect(id, options) {{
 }}
 populateSelect('filter-asset', DATA.assets);
 populateSelect('filter-strategy', DATA.strategies);
+populateSelect('filter-period', DATA.periods || ['full']);
 populateSelect('detail-strategy', DATA.strategies);
 
 // ---------------------------------------------------------------
@@ -475,10 +489,13 @@ function renderOverview() {{
 function renderExplorer() {{
   const assetF = document.getElementById('filter-asset').value;
   const stratF = document.getElementById('filter-strategy').value;
+  const periodF = document.getElementById('filter-period').value;
   const sortCol = document.getElementById('sort-col').value;
 
   let rows = DATA.all_metrics.filter(r =>
-    (!assetF || r.asset === assetF) && (!stratF || r.strategy === stratF)
+    (!assetF || r.asset === assetF) &&
+    (!stratF || r.strategy === stratF) &&
+    (!periodF || (r.period || 'full') === periodF)
   );
   rows = rows.slice().sort((a,b) => {{
     const av = a[sortCol] ?? -Infinity, bv = b[sortCol] ?? -Infinity;
@@ -505,7 +522,7 @@ function renderExplorer() {{
   renderTable('explorer-table', cols, rows);
 }}
 
-['filter-asset','filter-strategy','sort-col'].forEach(id =>
+['filter-asset','filter-strategy','filter-period','sort-col'].forEach(id =>
   document.getElementById(id).addEventListener('change', renderExplorer)
 );
 
@@ -553,13 +570,26 @@ function renderDetail() {{
     {{ label: 'Sharpe Médio', value: fmtNum(avg('sharpe_ratio')), cls: avg('sharpe_ratio') >= 0 ? 'green':'red' }},
     {{ label: 'Ativos Lucrativos', value: `${{nProfitable}} / ${{rows.length}}`, cls: '' }},
     {{ label: 'Max DD Médio', value: fmtPct(avg('max_drawdown')), cls: 'red' }},
+    {{ label: 'Patrimônio Final (10k)', value: fmtNum(avg('final_equity'), 0), cls: avg('final_equity') >= 10000 ? 'green' : 'red' }},
+    {{ label: 'Exposição Média', value: fmtPct(avg('avg_exposure')), cls: '' }},
+    {{ label: 'Exposição Máxima', value: fmtPct(avg('max_exposure')), cls: '' }},
     {{ label: 'Trades/Ano (média)', value: fmtNum(avg('trades_per_year'),1), cls: '' }},
     {{ label: 'Win Rate Médio', value: fmtPct(avg('win_rate')), cls: '' }},
   ];
   document.getElementById('detail-cards').innerHTML = cards.map(c => `
     <div class="card"><h3>${{c.label}}</h3><div class="value ${{c.cls}}">${{c.value}}</div></div>
   `).join('');
-
+  const doc = DATA.strategy_docs[strat] || {{}};
+  document.getElementById('strategy-doc-card').innerHTML = `
+    <h3>Descrição da estratégia</h3>
+    <p><strong>${{doc.friendly_name || strat}}</strong> — ${{doc.summary || 'Estratégia do framework de backtest.'}}</p>
+    <ul>
+      <li><strong>Indicadores:</strong> ${{(doc.indicators || []).join(', ')}}</li>
+      <li><strong>Entrada:</strong> ${{doc.entry_trigger || 'Ver lógica da estratégia.'}}</li>
+      <li><strong>Saída:</strong> ${{doc.exit_trigger || 'Ver lógica da estratégia.'}}</li>
+      <li><strong>Parâmetros principais:</strong> ${{doc.parameters || 'Parâmetros configuráveis.'}}</li>
+    </ul>
+  `;
   // Destroy previous charts
   detailCharts.forEach(c => c.destroy());
   detailCharts = [];

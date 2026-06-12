@@ -27,6 +27,7 @@ from strategies.mean_reversion.bollinger import BollingerReversion, ZScoreRevers
 from strategies.hybrid.trend_reversion import TrendFilteredReversion, MomentumReversion
 from backtest.engine import BacktestEngine
 from metrics.calculator import MetricsCalculator
+from benchmark_dca import simulate_dca_benchmark
 from reporting.ranker import build_comparison_table, full_ranking, export_report
 
 
@@ -68,6 +69,16 @@ def get_strategies():
 # Main
 # ---------------------------------------------------------------------------
 
+def get_analysis_periods(config_path: str = "config.yaml"):
+    """Lê as janelas temporais configuradas para análise comparativa."""
+    with open(config_path, "r", encoding="utf-8") as f:
+        cfg = yaml.safe_load(f) or {}
+    windows = cfg.get("temporal_windows", [])
+    if not windows:
+        return [("full", None, None)]
+    return [(w.get("name", "full"), w.get("start"), w.get("end")) for w in windows]
+
+
 def main():
     parser = argparse.ArgumentParser(description="Trading Backtest Framework — Run All")
     parser.add_argument("--assets", nargs="+", default=None,
@@ -83,41 +94,59 @@ def main():
 
     # Carregar dados
     loader = DataLoader(config_path=args.config)
-    asset_data = loader.load_all(assets=args.assets)
-
-    if not asset_data:
-        print("Nenhum dado carregado. Verifique a pasta data/raw/")
-        return
-
+    periods = get_analysis_periods(args.config)
     strategies = get_strategies()
     all_metrics = []
 
-    # Iterar estratégias × ativos
-    total = len(strategies) * len(asset_data)
+    if not periods:
+        periods = [("full", None, None)]
+
+    total = len(periods) * len(strategies) * len(loader.config.get("assets", []))
     with tqdm(total=total, desc="Backtests") as pbar:
-        for strategy in strategies:
-            for asset, df in asset_data.items():
-                pbar.set_description(f"{strategy.name} | {asset}")
+        for period_name, start, end in periods:
+            asset_data = loader.load_all(assets=args.assets, start=start, end=end)
+            if not asset_data:
+                print(f"Nenhum dado carregado para o período {period_name}. Verifique a pasta data/raw/")
+                continue
 
-                try:
-                    engine = BacktestEngine(df, strategy, asset=asset, config_path=args.config)
-                    result = engine.run()
-                    calc   = MetricsCalculator(result, n_parameters=strategy.n_parameters)
-                    m      = calc.compute()
-                    all_metrics.append(m)
+            for strategy in strategies:
+                for asset, df in asset_data.items():
+                    pbar.set_description(f"{period_name} | {strategy.name} | {asset}")
 
-                    # Gráficos individuais (opcional)
-                    if not args.no_charts:
-                        from reporting.charts import plot_equity_curve
-                        chart_path = f"results/charts/{asset}/{strategy.name}.png"
-                        os.makedirs(os.path.dirname(chart_path), exist_ok=True)
-                        plot_equity_curve(result, save_path=chart_path, show=False)
-                        plt.close("all")
+                    try:
+                        engine = BacktestEngine(df, strategy, asset=asset, config_path=args.config)
+                        result = engine.run()
+                        calc   = MetricsCalculator(result, n_parameters=strategy.n_parameters)
+                        m      = calc.compute()
+                        m.strategy_name = strategy.name
+                        m.period = period_name
+                        all_metrics.append(m)
 
-                except Exception as e:
-                    print(f"\n[ERRO] {strategy.name} | {asset}: {e}")
+                        if not args.no_charts:
+                            from reporting.charts import plot_equity_curve
+                            chart_path = f"results/charts/{period_name}/{asset}/{strategy.name}.png"
+                            os.makedirs(os.path.dirname(chart_path), exist_ok=True)
+                            plot_equity_curve(result, save_path=chart_path, show=False)
+                            plt.close("all")
 
-                pbar.update(1)
+                    except Exception as e:
+                        print(f"\n[ERRO] {period_name} | {strategy.name} | {asset}: {e}")
+
+                    pbar.update(1)
+
+            # Benchmarks DCA adicionais por período
+            for frequency, name in (("W", "DCA_Weekly"), ("M", "DCA_Monthly")):
+                for asset, df in asset_data.items():
+                    try:
+                        result = simulate_dca_benchmark(df, asset=asset, frequency=frequency, initial_capital=10_000.0)
+                        calc = MetricsCalculator(result, n_parameters=2)
+                        m = calc.compute()
+                        m.strategy_name = name
+                        m.period = period_name
+                        all_metrics.append(m)
+                    except Exception as exc:
+                        print(f"[ERRO] Benchmark {period_name} | {name} | {asset}: {exc}")
+                    pbar.update(1)
 
     if not all_metrics:
         print("Nenhuma métrica calculada.")
