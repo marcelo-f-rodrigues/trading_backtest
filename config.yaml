@@ -15,16 +15,25 @@ assets:
   - SOYFUT
 
 # --- Formato esperado dos CSVs ---
+# Suporta tanto o formato padrão (Date,Open,High,Low,Close,Volume)
+# quanto o formato do Investing.com em português
+# (Data,Último,Abertura,Máxima,Mínima,Vol.,Var%), com números no
+# formato "1.234,56" e datas "dd.mm.yyyy".
 data:
-  date_column: "Date"        # Nome da coluna de data
-  date_format: "%Y-%m-%d"    # Formato da data
-  ohlcv_columns:             # Mapeamento: nome_padrão -> nome_no_csv
-    open: "Open"
-    high: "High"
-    low: "Low"
-    close: "Close"
-    volume: "Volume"
   directory: "data/raw"
+
+  # Mapeia o nome do ativo (usado no código) -> texto a ser procurado
+  # (case-insensitive, substring) no nome do arquivo dentro de data/raw.
+  asset_aliases:
+    BTCUSD:    "Bitcoin"
+    BOVA11:    "BOVA11"
+    IVVB11:    "IVVB11"
+    USDBRL:    "USD_BRL"
+    XAUUSD:    "XAU_USD"
+    WTIUSD:    "WTI_USD"
+    DOLFUT:    "Índice Dólar Futuros"
+    COPPERFUT: "Cobre Futuros"
+    SOYFUT:    "Soja Chicago Futuros"
 
 # --- Engine de Backtest ---
 backtest:
