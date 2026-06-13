@@ -48,6 +48,7 @@ class FullMetrics:
     recovery_factor: float = np.nan
     ulcer_index: float = np.nan
     volatility_annual: float = np.nan
+    annualized_volatility: float = np.nan
     max_drawdown: float = np.nan
     avg_drawdown: float = np.nan
 
@@ -186,7 +187,7 @@ class MetricsCalculator:
 
         # Volatilidade
         m.volatility_annual = float(ret.std() * np.sqrt(TRADING_DAYS))
-        # m.annualized_volatility = float(ret.std() * np.sqrt(TRADING_DAYS))
+        m.annualized_volatility = float(ret.std() * np.sqrt(TRADING_DAYS))
 
         # Sharpe (risk-free = 0 para simplificar)
         m.sharpe_ratio = (
