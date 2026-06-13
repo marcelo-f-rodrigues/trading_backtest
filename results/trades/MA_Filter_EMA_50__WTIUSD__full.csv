@@ -1,0 +1,2 @@
+entry_date,entry_price,exit_date,exit_price,return_pct,pnl,bars_held,trigger
+2013-03-18,93.92382999999998,2013-03-19,92.1078,-0.023335135715824015,-233.35135715824015,1,MA_Filter_EMA_50

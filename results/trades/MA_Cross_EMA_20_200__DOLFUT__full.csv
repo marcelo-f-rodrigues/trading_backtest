@@ -1,0 +1,2 @@
+entry_date,entry_price,exit_date,exit_price,return_pct,pnl,bars_held,trigger
+2014-06-17,80.79671599999999,2014-06-20,80.36055900000001,-0.009398202075440506,-93.98202075440506,3,MA_Cross_EMA_20_200

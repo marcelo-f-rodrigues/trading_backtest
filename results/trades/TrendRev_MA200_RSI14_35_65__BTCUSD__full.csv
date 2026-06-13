@@ -1,0 +1,2 @@
+entry_date,entry_price,exit_date,exit_price,return_pct,pnl,bars_held,trigger
+2014-02-07,696.3956999999999,2014-02-16,299.5002,-0.5739281313770317,-5739.281313770317,9,TrendRev_MA200_RSI14_35_65
