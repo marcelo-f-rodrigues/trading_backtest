@@ -17,13 +17,13 @@ env/
 .venv
 
 # Dados sensíveis (não versionar os CSVs brutos)
-data/raw/*.csv
-data/processed/*.csv
+# data/raw/*.csv
+# data/processed/*.csv
 
 # Resultados gerados
-results/reports/*.csv
+# results/reports/*.csv
 results/charts/
-results/rankings/*.csv
+# results/rankings/*.csv
 
 # Jupyter
 .ipynb_checkpoints/
