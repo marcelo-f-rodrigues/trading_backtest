@@ -16,6 +16,7 @@ from tqdm import tqdm
 
 from backtest.engine import BacktestEngine
 from metrics.calculator import MetricsCalculator
+from reporting.export_raw import export_backtest_raw
 
 
 # ---------------------------------------------------------------------------
@@ -49,6 +50,14 @@ def cross_asset_robustness(
         strategy = strategy_factory()
         engine   = BacktestEngine(df, strategy, asset=asset, **engine_kwargs)
         result   = engine.run()
+        export_backtest_raw(
+            result=result,
+            price_df=df,
+            strategy_name=result.strategy_name,
+            asset=result.asset,
+            period="full",
+            output_dir="results",
+        )
         calc     = MetricsCalculator(result, n_parameters=strategy.n_parameters)
         m        = calc.compute()
 
@@ -130,6 +139,14 @@ def temporal_robustness(
         strategy = strategy_factory()
         engine   = BacktestEngine(df_w, strategy, asset=asset, **engine_kwargs)
         result   = engine.run()
+        export_backtest_raw(
+            result=result,
+            price_df=df,
+            strategy_name=result.strategy_name,
+            asset=result.asset,
+            period="full",
+            output_dir="results",
+        )
         calc     = MetricsCalculator(result, n_parameters=strategy.n_parameters)
         m        = calc.compute()
 
@@ -196,6 +213,14 @@ def parametric_robustness(
             strategy = strategy_class(**params)
             engine   = BacktestEngine(df, strategy, asset=asset, **engine_kwargs)
             result   = engine.run()
+            export_backtest_raw(
+                result=result,
+                price_df=df,
+                strategy_name=result.strategy_name,
+                asset=result.asset,
+                period="full",
+                output_dir="results",
+            )
             calc     = MetricsCalculator(result, n_parameters=len(params))
             m        = calc.compute()
 

@@ -29,6 +29,7 @@ from backtest.engine import BacktestEngine
 from metrics.calculator import MetricsCalculator
 from benchmark_dca import simulate_dca_benchmark
 from reporting.ranker import build_comparison_table, full_ranking, export_report
+from reporting.export_raw import export_backtest_raw
 
 
 # ---------------------------------------------------------------------------
@@ -116,6 +117,15 @@ def main():
                     try:
                         engine = BacktestEngine(df, strategy, asset=asset, config_path=args.config)
                         result = engine.run()
+
+                        export_backtest_raw(
+                            result=result,
+                            price_df=df,
+                            strategy_name=result.strategy_name,
+                            asset=result.asset,
+                            period="full",
+                            output_dir="results",
+                        )
                         calc   = MetricsCalculator(result, n_parameters=strategy.n_parameters)
                         m      = calc.compute()
                         m.strategy_name = strategy.name

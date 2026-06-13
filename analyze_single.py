@@ -25,6 +25,7 @@ from reporting.charts import (
     plot_profile_radar,
 )
 from reporting.ranker import build_comparison_table, rank_by_profile
+from reporting.export_raw import export_backtest_raw
 
 
 def main():
@@ -56,6 +57,15 @@ def main():
     # Backtest
     engine = BacktestEngine(df, strategy, asset=args.asset, config_path=args.config)
     result = engine.run()
+
+    export_backtest_raw(
+        result=result,
+        price_df=df,
+        strategy_name=result.strategy_name,
+        asset=result.asset,
+        period="full",
+        output_dir="results",
+    )
 
     # Métricas
     calc = MetricsCalculator(result, n_parameters=strategy.n_parameters)

@@ -70,10 +70,20 @@ df = loader.load("BTCUSD")
 # 2. Executar backtest de uma estratégia
 from strategies.trend_following.moving_average import MovingAverageCrossover
 from backtest.engine import BacktestEngine
+from reporting.export_raw import export_backtest_raw
 
 strategy = MovingAverageCrossover(fast=20, slow=200)
 engine = BacktestEngine(df, strategy, gradual_entry=True)
 result = engine.run()
+
+export_backtest_raw(
+        result=result,
+        price_df=df,
+        strategy_name=result.strategy_name,
+        asset=result.asset,
+        period="full",
+        output_dir="results",
+    )
 
 # 3. Calcular métricas completas
 from metrics.calculator import MetricsCalculator
