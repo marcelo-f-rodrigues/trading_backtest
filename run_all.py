@@ -30,6 +30,12 @@ from metrics.calculator import MetricsCalculator
 from benchmark_dca import simulate_dca_benchmark
 from reporting.ranker import build_comparison_table, full_ranking, export_report
 from reporting.export_raw import export_backtest_raw
+from reporting.strategy_profiler import (
+    build_strategy_ranking,
+    export_strategy_ranking
+)
+from reporting.investor_report import build_investor_report
+from reporting.export_analysis import export_strategy_analysis
 
 
 # ---------------------------------------------------------------------------
@@ -98,6 +104,7 @@ def main():
     periods = get_analysis_periods(args.config)
     strategies = get_strategies()
     all_metrics = []
+    all_results = []
 
     if not periods:
         periods = [("full", None, None)]
@@ -117,6 +124,7 @@ def main():
                     try:
                         engine = BacktestEngine(df, strategy, asset=asset, config_path=args.config)
                         result = engine.run()
+                        all_results.append(result)
 
                         export_backtest_raw(
                             result=result,
@@ -171,9 +179,27 @@ def main():
     # Exportar relatórios
     export_report(df_metrics, rankings, output_dir="results/reports")
 
+
     print("\n" + "=" * 70)
     print("  Análise concluída. Resultados em results/")
     print("=" * 70)
+
+    ranking = build_strategy_ranking(
+        all_results
+    )
+
+
+    investor_report = build_investor_report(
+        all_results
+    )
+
+
+    export_strategy_analysis(
+        ranking,
+        investor_report,
+        output_dir="results/reports"
+    )
+
 
 
 if __name__ == "__main__":
